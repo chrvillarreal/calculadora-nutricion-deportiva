@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { NhostClient, NhostSession } from '@nhost/nhost-js';
 import { nhostConfig } from '../lib/nhost';
 import { professionalSession } from './session';
+import { subscribeSession } from './sessionEvents';
 
 export const SESSION_RESTORE_TIMEOUT_MS = 12000;
 
@@ -42,8 +43,7 @@ export function AuthProvider({ children, client = nhostConfig.client, configErro
         }, Math.min(validSession.accessTokenExpiresIn * 1000, 2147483647));
       }
     };
-    const stopAuth = client.auth.onAuthStateChanged((_event, session) => update(session));
-    const stopToken = client.auth.onTokenChanged(session => update(session));
+    const stopListening = subscribeSession(client, update);
     const initialRevision = revision;
     void client.auth.isAuthenticatedAsync().then(authenticated => {
       if (active && revision === initialRevision) update(authenticated ? client.auth.getSession() : null);
@@ -51,7 +51,7 @@ export function AuthProvider({ children, client = nhostConfig.client, configErro
       clearTimeout(restoreTimer);
       if (active && revision === initialRevision) setState({ session: null, loading: false, sessionError: 'No se pudo restaurar la sesión. Reintentá la conexión.' });
     });
-    return () => { active = false; clearTimeout(restoreTimer); clearTimeout(expiryTimer); stopAuth(); stopToken(); };
+    return () => { active = false; clearTimeout(restoreTimer); clearTimeout(expiryTimer); stopListening(); };
   }, [client, attempt]);
   return <AuthContext.Provider value={{ ...state, client, retrySession: () => setAttempt(value => value + 1), configError: client ? undefined : configError ?? nhostConfig.error }}>{children}</AuthContext.Provider>;
 }

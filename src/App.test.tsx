@@ -69,9 +69,9 @@ describe('rutas privadas y ciclo de sesión', () => {
     expect(signOut).toHaveBeenCalledOnce();
     expect(screen.queryByText('Ficha privada A')).toBeNull();
   });
-  it('cancela las suscripciones al desmontar', () => {
+  it('desmonta sin detener el cliente Auth compartido del SDK 3.3.1', () => {
     const { unmount, stopAuth, stopToken } = setup(); unmount();
-    expect(stopAuth).toHaveBeenCalledOnce(); expect(stopToken).toHaveBeenCalledOnce();
+    expect(stopAuth).not.toHaveBeenCalled(); expect(stopToken).not.toHaveBeenCalled();
   });
   it('termina la carga si Nhost no responde y permite reintentar sin exponer fichas', async () => {
     vi.useFakeTimers(); window.location.hash = '#deportistas';
