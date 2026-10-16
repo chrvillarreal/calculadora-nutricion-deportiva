@@ -4,13 +4,19 @@ import { listAthletes, saveAthlete, validateAthlete, WRITES_BLOCKED } from './ap
 
 function fakeClient(authenticated = true) {
   const request = vi.fn().mockResolvedValue({ data: { athletes: [] }, error: null });
-  return { request, client: { auth: { getSession: () => authenticated ? { user: { id: 'a', isAnonymous: false, roles: ['user'] } } : null, getAccessToken: () => authenticated ? 'test-user-token' : undefined }, graphql: { request } } as unknown as NhostClient };
+  return { request, client: { auth: { getSession: () => authenticated ? { accessTokenExpiresIn: 3600, user: { id: 'a', isAnonymous: false, roles: ['user'] } } : null, getAccessToken: () => authenticated ? 'test-user-token' : undefined }, graphql: { request } } as unknown as NhostClient };
 }
 const input = { full_name: '  Deportista de prueba  ', birth_date: '1990-05-12', notes: '  Nota  ' };
 
 describe('API de deportistas (pruebas unitarias, no verifican permisos del servidor)', () => {
   it('no consulta sin sesión', async () => {
     const { client, request } = fakeClient(false);
+    await expect(listAthletes(client)).rejects.toThrow('sesión');
+    expect(request).not.toHaveBeenCalled();
+  });
+  it('no envía solicitudes con un token vencido retenido por el SDK', async () => {
+    const { client, request } = fakeClient();
+    vi.spyOn(client.auth, 'getSession').mockReturnValue({ accessTokenExpiresIn: -1, user: { id: 'a', isAnonymous: false, roles: ['user'] } } as ReturnType<typeof client.auth.getSession>);
     await expect(listAthletes(client)).rejects.toThrow('sesión');
     expect(request).not.toHaveBeenCalled();
   });

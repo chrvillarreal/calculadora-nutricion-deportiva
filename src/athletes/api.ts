@@ -1,4 +1,5 @@
 import type { NhostClient } from '@nhost/nhost-js';
+import { professionalSession } from '../auth/session';
 
 export type Athlete = { id: string; full_name: string; birth_date: string | null; notes: string | null };
 export type AthleteInput = Pick<Athlete, 'full_name' | 'birth_date' | 'notes'>;
@@ -33,7 +34,7 @@ export function validateAthlete(input: AthleteInput, today = new Date().toISOStr
 
 export async function userRequest<T>(client: NhostClient, query: string, variables: Record<string, unknown>) {
   const session = client.auth.getSession();
-  if (!session || session.user.isAnonymous || !session.user.roles.includes('user') || !client.auth.getAccessToken()) throw new Error('La sesión venció o no tiene acceso profesional. Volvé a ingresar.');
+  if (!professionalSession(session) || !client.auth.getAccessToken()) throw new Error('La sesión venció o no tiene acceso profesional. Volvé a ingresar.');
   const { data, error } = await client.graphql.request<T>(query, variables, { headers: { 'x-hasura-role': 'user' } });
   if (error || !data) throw new Error('No se pudo completar la operación. Revisá la conexión y los permisos del rol user en Hasura.');
   return data;

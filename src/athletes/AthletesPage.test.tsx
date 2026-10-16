@@ -7,7 +7,7 @@ import { AthletesPage, AthleteForm } from './AthletesPage';
 afterEach(cleanup);
 
 function setup(request = vi.fn().mockResolvedValue({ data: { athletes: [] }, error: null })) {
-  const client = { auth: { onAuthStateChanged: () => () => {}, onTokenChanged: () => () => {}, isAuthenticatedAsync: async () => true, getSession: () => ({ user: { id: 'a', isAnonymous: false, roles: ['user'] } }), getAccessToken: () => 'test-user-token' }, graphql: { request } } as unknown as NhostClient;
+  const client = { auth: { onAuthStateChanged: () => () => {}, onTokenChanged: () => () => {}, isAuthenticatedAsync: async () => true, getSession: () => ({ accessTokenExpiresIn: 3600, user: { id: 'a', isAnonymous: false, roles: ['user'] } }), getAccessToken: () => 'test-user-token' }, graphql: { request } } as unknown as NhostClient;
   render(<AuthProvider client={client}><AthletesPage /></AuthProvider>);
   return { request, user: userEvent.setup() };
 }

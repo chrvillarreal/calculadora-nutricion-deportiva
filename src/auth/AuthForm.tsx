@@ -8,7 +8,7 @@ export function validateCredentials(email: string, password: string, register: b
 }
 
 export function AuthForm() {
-  const { client, configError, sessionError } = useAuth();
+  const { client, configError, sessionError, retrySession } = useAuth();
   const [register, setRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,6 +39,7 @@ export function AuthForm() {
     <h1 id="auth-title">{register ? 'Crear cuenta profesional' : 'Acceso profesional'}</h1>
     <p>Ingresá para consultar tus deportistas. La calculadora sigue disponible sin cuenta.</p>
     {(configError || sessionError) && <p role="alert">{configError || sessionError}</p>}
+    {sessionError && <button type="button" className="secondary" onClick={retrySession}>Reintentar conexión</button>}
     <form onSubmit={submit} noValidate aria-busy={busy}>
       <fieldset disabled={!client || busy} className="form-fields">
         <label>Correo electrónico<input type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required /></label>
