@@ -6,7 +6,7 @@ Calculadora de nutrición deportiva con React 19, TypeScript y Vite. La calculad
 
 ## Desarrollo local
 
-Validado con Node 24.19.0 y npm 11.9.0. El lockfile conserva las versiones probadas.
+Se requiere Node 24.x (declarado en package.json); validado con Node 24.19.0 y npm 11.9.0. El lockfile conserva las versiones probadas.
 
 ```bash
 npm ci
@@ -38,7 +38,7 @@ El registro crea una cuenta en Nhost Auth cuando un usuario lo solicita; no prov
 
 Se conserva y fija `@nhost/nhost-js` **3.3.1**, versión realmente instalada, con lockfile. Se verificaron declaraciones y código distribuidos: `new NhostClient({ subdomain, region })`, `auth.signUp`, `auth.signIn`, `auth.signOut`, `auth.isAuthenticatedAsync`, `auth.getSession`, `auth.onAuthStateChanged`, `auth.onTokenChanged` y `graphql.request`.
 
-El SDK sincroniza el token de usuario con GraphQL y renueva la sesión. Las solicitudes fuerzan rol `user` y comprueban sesión/token antes de enviarse. No existe cliente administrador ni se envía `professional_id` desde los formularios. Hasura debe aplicar el preset y los filtros de propiedad del servidor.
+El SDK sincroniza el token de usuario con GraphQL y renueva la sesión. Un puente único de eventos evita que el cleanup defectuoso del SDK 3.3.1 detenga Auth durante React StrictMode; los componentes solo eliminan sus listeners locales. La restauración de sesión tiene un límite de 12 segundos y reintento; las fichas se ocultan al vencer el token. Las solicitudes fuerzan rol `user` y comprueban sesión/token antes de enviarse. No existe cliente administrador ni se envía `professional_id` desde los formularios. Hasura debe aplicar el preset y los filtros de propiedad del servidor.
 
 Nhost ha deprecado la rama 3.x. Migrar a 4.x requiere una tarea separada con adaptación de API y pruebas reales. No se asume que las APIs de ambas versiones sean equivalentes.
 
@@ -73,3 +73,7 @@ Para habilitar escrituras: revisar permisos/presets y relaciones en una copia ai
 Importar el repositorio con preset Vite, instalación `npm ci`, compilación `npm run build` y salida `dist`. Configurar las dos variables públicas por entorno y agregar el origen autorizado en Nhost/Hasura. La navegación usa hashes y no necesita rewrite SPA. Nunca configurar secretos administrativos en el frontend o en `VITE_*`.
 
 Validar primero un entorno de pruebas y revisar el PR. No activar producción ni fusionar a `main` hasta aprobar aislamiento y configuración. No se ejecutaron despliegues desde esta tarea.
+
+## Auditoría del PR #1
+
+Ver [informe técnico, correcciones y bloqueos de aceptación](docs/AUDITORIA-PR-1.md). La seguridad multiusuario real sigue pendiente; las pruebas locales no autorizan habilitar escrituras.
