@@ -586,3 +586,41 @@ footer {
     display: none;
   }
 }
+.trend {
+  margin: 24px 0 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  background: #f6faf7;
+  border-radius: 12px;
+}
+.trend figcaption {
+  font-size: 14px;
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+.trend svg {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  margin: auto;
+  height: auto;
+}
+.history .actions {
+  margin-bottom: 14px;
+}
+details + .actions {
+  margin-top: 18px;
+}
+details table {
+  margin-bottom: 14px;
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 380px) {
+  .trend {
+    padding: 10px;
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+}

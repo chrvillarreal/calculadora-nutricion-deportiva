@@ -2,7 +2,9 @@ import { StudentForm } from "./StudentForm";
 import { History } from "./History";
 import { useEffect, useState } from "react";
 import { Calculator } from "./Calculator";
-import { calculate, type Inputs } from "./calculations";
+import { type EvaluationDraft } from "./planning";
+import { FollowUp } from "./FollowUp";
+import { PwaSettings } from "./PwaSettings";
 import {
   db,
   deleteStudent,
@@ -25,8 +27,6 @@ const pages = [
   "Configuración",
 ] as const;
 type Page = (typeof pages)[number];
-const format = (n: number) =>
-  n.toLocaleString("es-AR", { maximumFractionDigits: 1 });
 export function App() {
   const [page, setPage] = useState<Page>("Inicio"),
     [students, setStudents] = useState<Student[]>([]),
@@ -96,17 +96,15 @@ export function App() {
     setMessage("");
     setError("");
   };
-  async function addAssessment(inputs: Inputs, protein: number, fat: number) {
+  async function addAssessment(draft: EvaluationDraft) {
     await action(async () => {
       await saveAssessment({
         id: crypto.randomUUID(),
         studentId: selected,
         date,
-        inputs: { ...inputs },
-        protein,
-        fat,
+        ...draft,
+        schemaVersion: 2,
         notes,
-        formula: "mifflin-st-jeor-v1",
         createdAt: new Date().toISOString(),
       });
       setNotes("");
@@ -116,7 +114,7 @@ export function App() {
     await action(async () => {
       const backup = await exportBackup();
       const url = URL.createObjectURL(
-        new Blob([JSON.stringify(backup, null, 2)], {
+        new Blob([JSON.stringify(backup)], {
           type: "application/json",
         }),
       );
@@ -463,46 +461,13 @@ export function App() {
                 Registro cronológico de peso y gasto estimado. Los cambios no
                 implican por sí solos una mejora o un deterioro.
               </p>
-              {student && own.length ? (
-                <div className="table-wrap">
-                  <table>
-                    <caption>{student.name} · mediciones guardadas</caption>
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Peso (kg)</th>
-                        <th>GET (kcal/día)</th>
-                        <th>Cambio de peso (kg)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...own].reverse().map((a, i, arr) => (
-                        <tr key={a.id}>
-                          <td>{a.date}</td>
-                          <td>{format(a.inputs.weightKg)}</td>
-                          <td>{format(calculate(a.inputs).total)}</td>
-                          <td>
-                            {i
-                              ? format(
-                                  a.inputs.weightKg -
-                                    arr[i - 1].inputs.weightKg,
-                                )
-                              : "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p>
-                  Seleccioná un alumno con evaluaciones guardadas para ver su
-                  seguimiento.
-                </p>
-              )}
+              <FollowUp student={student} items={own} />
             </section>
           </>
         )}
+        <div hidden={page !== "Configuración"}>
+          <PwaSettings />
+        </div>
         {page === "Configuración" && (
           <>
             <section className="panel">
@@ -542,7 +507,7 @@ export function App() {
                         });
                       } catch {
                         setError(
-                          "Copia no válida: debe ser JSON NutriSport Pro v1, de hasta 5 MB, con datos y referencias válidos.",
+                          "Copia no válida: debe ser JSON NutriSport Pro v1 o v2, de hasta 5 MB, con datos y referencias válidos.",
                         );
                       }
                     }}

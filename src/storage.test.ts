@@ -136,4 +136,8 @@ describe("almacenamiento local y respaldo", () => {
   });
   it("fecha local válida", () =>
     expect(localDate()).toMatch(/^\d{4}-\d{2}-\d{2}$/));
+  it("no exporta una copia inválida si hay datos locales corruptos", async () => {
+    await db.students.add({ ...s, notes: "x".repeat(2001) });
+    await expect(exportBackup(db)).rejects.toThrow("copia importable");
+  });
 });

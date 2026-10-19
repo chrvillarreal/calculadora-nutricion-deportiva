@@ -206,7 +206,7 @@ export function parseBackup(text: string): Backup {
   };
 }
 export async function exportBackup(database = db): Promise<Backup> {
-  return database.transaction(
+  const backup: Backup = await database.transaction(
     "r",
     database.students,
     database.assessments,
@@ -218,6 +218,14 @@ export async function exportBackup(database = db): Promise<Backup> {
       assessments: await database.assessments.toArray(),
     }),
   );
+  try {
+    parseBackup(JSON.stringify(backup));
+  } catch {
+    throw new Error(
+      "No se pudo crear una copia importable. Revisá los límites de 5 MB, 5.000 alumnos y 20.000 evaluaciones y la integridad de los datos locales.",
+    );
+  }
+  return backup;
 }
 export async function importBackup(text: string, database = db) {
   const backup = parseBackup(text);

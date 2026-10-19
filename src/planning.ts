@@ -1,5 +1,4 @@
 import {
-  calculate,
   macros,
   mifflinStJeor,
   validateInputs,
