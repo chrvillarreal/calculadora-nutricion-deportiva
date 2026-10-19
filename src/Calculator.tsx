@@ -1,0 +1,192 @@
+import { useState } from "react";
+
+import { calculate, macros, type Inputs } from "./calculations";
+
+export function Calculator({
+  onSave,
+  busy = false,
+}: {
+  onSave?: (inputs: Inputs, protein: number, fat: number) => void;
+  busy?: boolean;
+}) {
+  const [data, setData] = useState<Inputs>({
+    weightKg: 80,
+    heightCm: 180,
+    ageYears: 30,
+    sex: "male",
+    activityFactor: 1.55,
+  });
+  const [protein, setProtein] = useState(1.6),
+    [fat, setFat] = useState(0.9);
+  const set = (key: keyof Inputs, value: string) =>
+    setData((p) => ({ ...p, [key]: key === "sex" ? value : Number(value) }));
+  let result: ReturnType<typeof calculate> | undefined,
+    macro: ReturnType<typeof macros> | undefined,
+    error = "";
+  try {
+    result = calculate(data);
+    macro = macros(result.total, data.weightKg, protein, fat);
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Error de cálculo";
+  }
+  const num = (n: number) => Math.round(n).toLocaleString("es-AR");
+  return (
+    <div>
+      <section className="panel">
+        <h1>Calculadora energética</h1>
+        <p className="muted">
+          Estimaciones para adultos. No reemplazan una evaluación clínica
+          individual.
+        </p>
+        <div className="grid">
+          <label>
+            Peso (kg)
+            <input
+              type="number"
+              min="20"
+              max="400"
+              step="0.1"
+              value={data.weightKg}
+              onChange={(e) => set("weightKg", e.target.value)}
+            />
+          </label>
+          <label>
+            Altura (cm)
+            <input
+              type="number"
+              min="100"
+              max="250"
+              step="0.1"
+              value={data.heightCm}
+              onChange={(e) => set("heightCm", e.target.value)}
+            />
+          </label>
+          <label>
+            Edad (años)
+            <input
+              type="number"
+              min="18"
+              max="120"
+              step="1"
+              value={data.ageYears}
+              onChange={(e) => set("ageYears", e.target.value)}
+            />
+          </label>
+          <label>
+            Sexo utilizado por la ecuación
+            <select
+              value={data.sex}
+              onChange={(e) => set("sex", e.target.value)}
+            >
+              <option value="male">Masculino</option>
+              <option value="female">Femenino</option>
+            </select>
+          </label>
+          <label>
+            Factor de actividad
+            <select
+              value={data.activityFactor}
+              onChange={(e) => set("activityFactor", e.target.value)}
+            >
+              {[1.2, 1.375, 1.55, 1.725, 1.9].map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Proteína (g/kg)
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={protein}
+              onChange={(e) => setProtein(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Grasas (g/kg)
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={fat}
+              onChange={(e) => setFat(Number(e.target.value))}
+            />
+          </label>
+        </div>
+      </section>
+      {error ? (
+        <section role="alert" className="panel error">
+          {error}
+        </section>
+      ) : result && macro ? (
+        <section className="panel">
+          <h2>Resultados estimados</h2>
+          <div className="metrics">
+            <article>
+              <small>IMC</small>
+              <strong>{result.bmi.toFixed(1)}</strong>
+              <small>kg/m²</small>
+            </article>
+            <article>
+              <small>Gasto en reposo</small>
+              <strong>{num(result.basal)}</strong>
+              <small>kcal/día</small>
+            </article>
+            <article>
+              <small>Gasto total</small>
+              <strong>{num(result.total)}</strong>
+              <small>kcal/día</small>
+            </article>
+          </div>
+          <h2>Macronutrientes orientativos</h2>
+          <div className="metrics">
+            <article>
+              <small>Proteínas</small>
+              <strong>{num(macro.proteinG)}</strong>
+              <small>g/día</small>
+            </article>
+            <article>
+              <small>Grasas</small>
+              <strong>{num(macro.fatG)}</strong>
+              <small>g/día</small>
+            </article>
+            <article>
+              <small>Carbohidratos</small>
+              <strong>{num(macro.carbsG)}</strong>
+              <small>g/día</small>
+            </article>
+          </div>
+          <p className="muted">
+            Mifflin-St Jeor; GET = gasto en reposo × factor de actividad. 4
+            kcal/g proteínas y carbohidratos; 9 kcal/g grasas. El factor y los
+            objetivos requieren revisión profesional. No es una medición ni una
+            prescripción automática.
+          </p>
+          <div className="actions">
+            {onSave && (
+              <button
+                disabled={busy}
+                onClick={() => onSave(data, protein, fat)}
+              >
+                Guardar evaluación
+              </button>
+            )}
+            <a
+              href="https://pubmed.ncbi.nlm.nih.gov/2305711/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Fuente de la ecuación
+            </a>
+            <button className="secondary" onClick={() => window.print()}>
+              Imprimir / guardar PDF
+            </button>
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
