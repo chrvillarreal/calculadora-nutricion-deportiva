@@ -112,13 +112,11 @@ for (const width of [320, 375, 430, 768, 1024, 1440]) {
       .getByRole("navigation")
       .getByRole("button", { name: "Configuración", exact: true })
       .click();
-    await page
-      .getByLabel("Elegir copia JSON")
-      .setInputFiles({
-        name: "invalid.json",
-        mimeType: "application/json",
-        buffer: Buffer.from('{"version":999}'),
-      });
+    await page.getByLabel("Elegir copia JSON").setInputFiles({
+      name: "invalid.json",
+      mimeType: "application/json",
+      buffer: Buffer.from('{"version":999}'),
+    });
     await expect(page.getByRole("alert")).toContainText("Copia no válida");
     await page
       .getByRole("navigation")
