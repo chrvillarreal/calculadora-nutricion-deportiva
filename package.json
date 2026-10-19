@@ -1,24 +1,31 @@
 {
-  "name": "nutrisport-lab",
-  "version": "0.1.0",
+  "name": "nutrisport-pro",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@nhost/nhost-js": "^3.0.0",
+    "dexie": "^4.4.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "fake-indexeddb": "^6.2.6",
+    "prettier": "^3.9.10",
     "typescript": "~5.8.3",
     "vite": "^6.3.0",
     "vitest": "^3.1.0"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }
