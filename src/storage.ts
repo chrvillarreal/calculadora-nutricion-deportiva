@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 import { calculate, macros, type Inputs } from "./calculations";
+import { estimate, planMacros, type Method, type Plan } from "./planning";
 export type Student = {
   id: string;
   name: string;
@@ -9,7 +10,7 @@ export type Student = {
   createdAt: string;
   updatedAt: string;
 };
-export type Assessment = {
+export type LegacyAssessment = {
   id: string;
   studentId: string;
   date: string;
@@ -20,9 +21,22 @@ export type Assessment = {
   formula: "mifflin-st-jeor-v1";
   createdAt: string;
 };
+export type PlannedAssessment = Omit<
+  LegacyAssessment,
+  "formula" | "protein" | "fat"
+> & {
+  schemaVersion: 2;
+  formula: Method;
+  leanMassKg: number | null;
+  plan: Plan;
+};
+export type Assessment = LegacyAssessment | PlannedAssessment;
+export function isPlanned(a: Assessment): a is PlannedAssessment {
+  return "schemaVersion" in a && a.schemaVersion === 2;
+}
 export type Backup = {
   app: "nutrisport-pro";
-  version: 1;
+  version: 2;
   exportedAt: string;
   students: Student[];
   assessments: Assessment[];
@@ -99,49 +113,74 @@ export function validateStudent(value: unknown): Student {
 }
 export function validateAssessment(value: unknown): Assessment {
   const x = record(value);
-  keys(x, [
+  const planned = x.schemaVersion === 2;
+  const commonFields = [
     "id",
     "studentId",
     "date",
     "inputs",
-    "protein",
-    "fat",
     "notes",
     "formula",
     "createdAt",
-  ]);
+  ];
+  keys(
+    x,
+    planned
+      ? [...commonFields, "schemaVersion", "leanMassKg", "plan"]
+      : [...commonFields, "protein", "fat"],
+  );
   const i = record(x.inputs);
   keys(i, ["weightKg", "heightCm", "ageYears", "sex", "activityFactor"]);
   const inputs = i as Inputs;
+  const common = {
+    id: id(x.id),
+    studentId: id(x.studentId),
+    date: validDate(x.date),
+    inputs: { ...inputs },
+    notes: str(x.notes, 2000).trim(),
+    createdAt: timestamp(x.createdAt),
+  };
+  if (planned) {
+    const p = record(x.plan);
+    keys(p, ["mode", "protein", "fat", "adjustmentPercent", "meals"]);
+    if (
+      typeof x.formula !== "string" ||
+      (x.leanMassKg !== null && typeof x.leanMassKg !== "number")
+    )
+      return invalid();
+    const formula = x.formula as Method,
+      leanMassKg = x.leanMassKg as number | null,
+      plan = p as Plan;
+    const r = estimate(inputs, formula, leanMassKg);
+    planMacros(r.total, inputs.weightKg, plan);
+    return {
+      ...common,
+      schemaVersion: 2,
+      formula,
+      leanMassKg,
+      plan: { ...plan },
+    };
+  }
   const result = calculate(inputs);
   if (
     typeof x.protein !== "number" ||
     typeof x.fat !== "number" ||
     x.protein > 5 ||
-    x.fat > 5
+    x.fat > 5 ||
+    x.formula !== "mifflin-st-jeor-v1"
   )
     return invalid();
   macros(result.total, inputs.weightKg, x.protein, x.fat);
-  if (x.formula !== "mifflin-st-jeor-v1") return invalid();
-  return {
-    id: id(x.id),
-    studentId: id(x.studentId),
-    date: validDate(x.date),
-    inputs: { ...inputs },
-    protein: x.protein,
-    fat: x.fat,
-    notes: str(x.notes, 2000).trim(),
-    formula: x.formula,
-    createdAt: timestamp(x.createdAt),
-  };
+  return { ...common, protein: x.protein, fat: x.fat, formula: x.formula };
 }
+
 export function parseBackup(text: string): Backup {
   if (new Blob([text]).size > 5_000_000) return invalid();
   const x = record(JSON.parse(text));
   keys(x, ["app", "version", "exportedAt", "students", "assessments"]);
   if (
     x.app !== "nutrisport-pro" ||
-    x.version !== 1 ||
+    ![1, 2].includes(x.version as number) ||
     !Array.isArray(x.students) ||
     !Array.isArray(x.assessments) ||
     x.students.length > 5000 ||
@@ -150,6 +189,7 @@ export function parseBackup(text: string): Backup {
     return invalid();
   const students = x.students.map(validateStudent),
     assessments = x.assessments.map(validateAssessment);
+  if (x.version === 1 && assessments.some(isPlanned)) return invalid();
   const ids = new Set(students.map((s) => s.id));
   if (
     ids.size !== students.length ||
@@ -159,7 +199,7 @@ export function parseBackup(text: string): Backup {
     return invalid();
   return {
     app: "nutrisport-pro",
-    version: 1,
+    version: 2,
     exportedAt: timestamp(x.exportedAt),
     students,
     assessments,
@@ -172,7 +212,7 @@ export async function exportBackup(database = db): Promise<Backup> {
     database.assessments,
     async () => ({
       app: "nutrisport-pro",
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       students: await database.students.toArray(),
       assessments: await database.assessments.toArray(),

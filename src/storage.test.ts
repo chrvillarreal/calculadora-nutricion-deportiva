@@ -105,7 +105,7 @@ describe("almacenamiento local y respaldo", () => {
     },
   );
   it.each([
-    (b: any) => (b.version = 2),
+    (b: any) => (b.version = 3),
     (b: any) => b.students.push(s),
     (b: any) => b.assessments.push(a),
     (b: any) => (b.assessments[0].studentId = "missing"),
