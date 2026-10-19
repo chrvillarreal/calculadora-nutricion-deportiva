@@ -45,7 +45,7 @@ for (const width of [320, 375, 430, 768, 1024, 1440]) {
       .getByRole("button", { name: "Seguimiento", exact: true })
       .click();
     await expect(
-      page.getByRole("cell", { name: "2.759", exact: true }),
+      page.getByRole("cell", { name: "2.759", exact: true }).first(),
     ).toBeVisible();
     for (const name of [
       "Inicio",
@@ -125,7 +125,12 @@ for (const width of [320, 375, 430, 768, 1024, 1440]) {
     await page.getByLabel("Peso (kg)", { exact: true }).fill("0");
     await expect(page.getByRole("alert")).toBeVisible();
     await page.getByLabel("Peso (kg)", { exact: true }).fill("80");
-    await expect(page.getByText("2.759", { exact: true })).toBeVisible();
+    await expect(
+      page
+        .locator(".metrics article")
+        .filter({ hasText: "Gasto total" })
+        .getByText("2.759", { exact: true }),
+    ).toBeVisible();
     expect(errors).toEqual([]);
     expect(external).toEqual([]);
     await page
@@ -153,5 +158,10 @@ test("IndexedDB denegado mantiene calculadora operativa", async ({ page }) => {
     .getByRole("navigation")
     .getByRole("button", { name: "Calculadoras", exact: true })
     .click();
-  await expect(page.getByText("2.759", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .locator(".metrics article")
+      .filter({ hasText: "Gasto total" })
+      .getByText("2.759", { exact: true }),
+  ).toBeVisible();
 });

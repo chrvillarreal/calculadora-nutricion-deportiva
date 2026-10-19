@@ -19,6 +19,43 @@ Cada evaluación conserva inputs completos, fecha local, proteína y grasa en g/
 
 ## Validación y aplicabilidad
 
-Límites operativos de la app: peso 20–400 kg, altura 100–250 cm, edad entera 18–120 años, factor 1–2,5; constantes sexuales reconocidas; resultados positivos y finitos. Los límites previenen entradas imposibles o errores numéricos, **no son un rango de validación científica** de la ecuación. Persistencia de evaluaciones: proteína y grasa 0–5 g/kg y energía suficiente. La calculadora independiente conserva la libertad original de g/kg no negativos, rechazando desbordamiento y exceso energético.
+Límites operativos de la app: peso 20–400 kg, altura 100–250 cm, edad entera 18–120 años, factor 1–2,5; constantes sexuales reconocidas; resultados positivos y finitos. Los límites previenen entradas imposibles o errores numéricos, **no son un rango de validación científica** de la ecuación. Persistencia de evaluaciones: proteína y grasa 0–5 g/kg y energía suficiente. La función original de macros conserva entradas no negativas, rechazando desbordamiento y exceso energético. La interfaz de planificación de etapa 2 aplica además el límite operativo de 5 g/kg a proteína y grasa.
 
 Uso como apoyo con revisión profesional. No se valida una prescripción para menores, embarazo/lactancia, enfermedad, escenarios de peso extremos ni rendimiento deportivo específico. Sin diagnósticos automáticos ni clasificación de riesgo. Estimar con una ecuación no reemplaza medir ni evaluar al individuo.
+
+## Etapa 2: métodos adicionales
+
+Todos los métodos se comparan con los mismos kg, cm, años y factor. No se promedian ni se elige automáticamente el valor más alto o bajo. Su diferencia porcentual respecto de Mifflin es `(GET método / GET Mifflin - 1) × 100`; no es un intervalo de confianza ni una estimación del error individual. Protocolos y poblaciones de las ecuaciones difieren.
+
+### Harris-Benedict revisada, Roza y Shizgal (1984), v1
+
+- Masculino: 88,362 + 13,397 × kg + 4,799 × cm - 5,677 × años.
+- Femenino: 447,593 + 9,247 × kg + 3,098 × cm - 4,330 × años.
+- Referencia primaria: Roza AM, Shizgal HM. *The Harris Benedict equation reevaluated: resting energy requirements and the body cell mass*. Am J Clin Nutr. 1984;40:168-182. DOI 10.1093/ajcn/40.1.168. https://pubmed.ncbi.nlm.nih.gov/6741850/
+- Constantes y unidades cotejadas con la calculadora institucional de Maastricht UMC+: https://nutritionalassessment.mumc.nl/en/calculators-0 (la página general tiene una leyenda de altura inconsistente; se utiliza la página de calculadoras que explicita cm).
+- Es una revisión de las ecuaciones de Harris-Benedict, no la versión original de 1919. Estima reposo; no se considera automáticamente válida para un deportista concreto, enfermedad o extremos de peso.
+- Ejemplo 80 kg, 180 cm, 30 años, masculino: reposo 1853,632 kcal/día; factor 1,55 → GET 2873,1296. Femenino con los mismos datos: reposo 1615,093.
+
+### Cunningham (1980), v1
+
+- 500 + 22 × masa magra (kg). No es la revisión de 1991.
+- Referencia primaria: Cunningham JJ. *A reanalysis of the factors influencing basal metabolic rate in normal adults*. Am J Clin Nutr. 1980;33:2372-2374. DOI 10.1093/ajcn/33.11.2372. https://pubmed.ncbi.nlm.nih.gov/7435418/
+- Reanálisis de 223 sujetos de estudios clásicos, no una ecuación derivada exclusivamente en atletas. No se presenta como preferida universalmente para deportistas.
+- Requiere masa magra ingresada explícitamente, mayor que cero y no superior al peso. No se inventa ni se deriva automáticamente de un porcentaje de grasa desconocido. Registrar en notas el método de evaluación; su incertidumbre afecta la estimación.
+- Ejemplo: 64 kg de masa magra → reposo 1908 kcal/día; factor 1,55 → GET 2957,4.
+
+### Planificación energética y de macros
+
+No cambia el GET. `Objetivo = GET × (1 + ajuste/100)`; el ajuste (-30 a +30 %) es manual, con cero por defecto. El intervalo es una barrera operativa, no una recomendación clínica de déficit/superávit. No se prescribe una pérdida de peso ni se promete un resultado.
+
+- Modo g/kg: proteína y grasa según el peso registrado, cada una entre 0 y 5 g/kg; carbohidratos completan la energía restante.
+- Modo porcentaje: proteína g = objetivo × % proteína / 400; grasa g = objetivo × % grasa / 900; carbohidratos g = objetivo × (100 - % proteína - % grasa) / 400. No se admiten sumas superiores a 100 %.
+- Se muestran g/día, g/kg y % de energía. Sumas y cálculos usan números completos; el redondeo es solo visual.
+- Reparto en 1-8 comidas: divide los totales por el número elegido. No construye un menú, no asigna alimentos y no implica recomendaciones de timing.
+- Ejemplo GET 2759 y ajuste -10 %: objetivo 2483,1 kcal. Modo 25 % proteína, 30 % grasa: 155,19375 g proteína, 82,77 g grasa, 279,34875 g carbohidratos.
+
+### Versionado y seguimiento
+
+Registros anteriores mantienen `mifflin-st-jeor-v1` y su forma original, sin recalcular con otro método ni agregar un objetivo distinto. Nuevos registros tienen `schemaVersion: 2`, método exacto, inputs, masa magra opcional y plan completo. Exportación JSON v2 contiene ambos; se siguen aceptando backups v1.
+
+Gráficos: última evaluación de cada fecha; posiciones horizontales respetan la distancia entre días y no inventan mediciones intermedias. La escala vertical se ajusta al rango y no necesariamente parte de cero. La tabla conserva todas las evaluaciones, ordenadas por fecha, timestamp y ID para desempatar. Cambiar método puede cambiar el GET por razones matemáticas; se muestra un aviso cuando hay métodos distintos en el período.
